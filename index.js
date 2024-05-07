@@ -22,6 +22,11 @@ db.connect((err) => {
   console.log('MySQL connected');
 });
 
+
+app.get('/', (req,res) => {
+    res.send("Welcome to Node Js With Wordpress");
+})
+
 // Registration endpoint
 app.post('/register', async (req, res) => {
     const { username, email, password } = req.body;
@@ -49,12 +54,13 @@ app.post('/register', async (req, res) => {
   
   // Login function
   async function loginUser(user) {
+    const secretKey = crypto.randomBytes(32).toString('hex');
     try {
       const token = jwt.sign({
         id: user.ID,
         username: user.user_login,
         email: user.user_email,
-      }, 'your_secret_key', { expiresIn: '1h' });
+      }, secretKey, { expiresIn: '1h' });
   
       return token;
     } catch (error) {
