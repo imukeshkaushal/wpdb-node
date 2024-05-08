@@ -147,8 +147,67 @@ app.patch('/users/update/:id', async (req, res) => {
   }
 });
 
+// Get all users endpoint
+app.get('/users', async (req, res) => {
+  try {
+      const getAllUsersQuery = 'SELECT * FROM wp_users';
+      const users = await queryDB(getAllUsersQuery);
+      const usersArray = users.map(user => ({
+          id: user.ID,
+          username: user.user_login,
+          email: user.user_email,
+      }));
+      return res.status(200).json(usersArray);
+  } catch (error) {
+      console.error('Error retrieving users:', error);
+      return res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
-  // Function to execute MySQL queries
+// Get single user endpoint
+app.get('/users/:id', async (req, res) => {
+  const userId = req.params.id;
+
+  try {
+      const getUserQuery = 'SELECT * FROM wp_users WHERE ID = ?';
+      const [user] = await queryDB(getUserQuery, [userId]);
+
+      if (!user) {
+          return res.status(404).json({ error: 'User not found' });
+      }
+      const userDetails = {
+          id: user.ID,
+          username: user.user_login,
+          email: user.user_email,
+      };
+      return res.status(200).json(userDetails);
+  } catch (error) {
+      console.error('Error retrieving user:', error);
+      return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Delete user endpoint
+app.delete('/users/delete/:id', async (req, res) => {
+  const userId = req.params.id;
+
+  try {
+      const getUserQuery = 'SELECT * FROM wp_users WHERE ID = ?';
+      const [user] = await queryDB(getUserQuery, [userId]);
+      if (!user) {
+          return res.status(404).json({ error: 'User not found' });
+      }
+      const deleteUserQuery = 'DELETE FROM wp_users WHERE ID = ?';
+      await queryDB(deleteUserQuery, [userId]);
+      return res.status(200).json({ message: 'User deleted successfully' });
+  } catch (error) {
+      console.error('Error deleting user:', error);
+      return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
+// Function to execute MySQL queries
 function queryDB(sql, args) {
     return new Promise((resolve, reject) => {
       db.query(sql, args, (err, rows) => {
