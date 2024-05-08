@@ -108,6 +108,45 @@ app.post('/login', async (req, res) => {
       return res.status(500).json({ error: 'Internal server error' });
     }
 });
+// Update user endpoint using PATCH method
+app.patch('/users/update/:id', async (req, res) => {
+  const userId = req.params.id;
+  const { username, email, password } = req.body;
+
+  try {
+    const getUserQuery = 'SELECT * FROM wp_users WHERE ID = ?';
+    const existingUser = await queryDB(getUserQuery, [userId]);
+    if (existingUser.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    const updateFields = {};
+    if (username) updateFields.user_login = username;
+    if (email) updateFields.user_email = email;
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      updateFields.user_pass = hashedPassword;
+    }
+    console.log("updated fields", updateFields);
+
+    const updateUserQuery = 'UPDATE wp_users SET ? WHERE ID = ?';
+    await queryDB(updateUserQuery, [updateFields, userId]);
+    
+    const updatedUser = await queryDB(getUserQuery, [userId]);
+      console.log("Updated User",updatedUser)
+    const user = {
+      id: updatedUser[0].ID,
+      username: updatedUser[0].user_login,
+      email: updatedUser[0].user_email,
+    };
+
+    return res.status(200).json({ message: 'User updated successfully', user });
+  } catch (error) {
+    console.error('Error updating user:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 
   // Function to execute MySQL queries
 function queryDB(sql, args) {
